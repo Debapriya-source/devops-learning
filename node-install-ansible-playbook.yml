@@ -1,0 +1,58 @@
+---
+- name: Install Node.js using NVM
+  hosts: test
+  become: yes
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      apt:
+        name:
+          - build-essential
+          - libssl-dev
+          - curl
+        state: present
+
+    - name: Clone NVM repository
+      git:
+        repo: 'https://github.com/nvm-sh/nvm.git'
+        dest: ~/.nvm
+        version: v0.39.7
+        update: no
+
+    - name: Add NVM to bash profile
+      shell: |
+        echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc
+        echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+        echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.bashrc
+      args:
+        executable: /bin/bash
+
+    - name: Source bash profile
+      shell: source ~/.bashrc
+      args:
+        executable: /bin/bash
+
+    - name: Install Node.js
+      shell: |
+        . ~/.nvm/nvm.sh
+        nvm install node
+      args:
+        executable: /bin/bash
+
+    - name: Verify Node.js installation
+      shell: |
+        . ~/.nvm/nvm.sh
+        node -v
+        npm -v
+      register: node_version
+      args:
+        executable: /bin/bash
+
+    - name: Display Node.js version
+      debug:
+        msg: "Node.js version: {{ node_version.stdout_lines }}"
